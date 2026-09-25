@@ -206,6 +206,17 @@ export function recognizeGesture(
     };
   }
 
+  // 5b. Middle Finger: Only Middle finger extended
+  if (fingers.middle && !fingers.index && !fingers.ring && !fingers.pinky) {
+    return {
+      name: 'MiddleFinger',
+      label: 'Middle Finger',
+      emoji: '🖕',
+      confidence: 0.95,
+      description: 'Middle finger raised upright with other fingers folded',
+    };
+  }
+
   // 6. Victory / Peace: Index + Middle extended, others curled
   if (fingers.index && fingers.middle && !fingers.ring && !fingers.pinky) {
     return {

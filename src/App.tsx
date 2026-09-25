@@ -6,6 +6,7 @@ import { soundEffects } from "./services/soundEffects";
 import { CameraView } from "./components/CameraView";
 import { GestureHud } from "./components/GestureHud";
 import { ControlsPanel } from "./components/ControlsPanel";
+import { SoundFxPanel } from "./components/SoundFxPanel";
 import { GestureGuideModal } from "./components/GestureGuideModal";
 import {
   Hand,
@@ -30,12 +31,12 @@ export function App() {
   const [fps, setFps] = useState<number>(0);
   const [latencyMs, setLatencyMs] = useState<number>(0);
 
-  // Audio & Modals
-  const [isAudioEnabled, setIsAudioEnabled] = useState<boolean>(false);
+  // Modals & Motion Tracking
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
   const lastGestureRef = useRef<string>("");
+  const lastWristPosRef = useRef<{ x: number; y: number; time: number } | null>(null);
 
-  // Settings
+  // Settings with Sound FX
   const [settings, setSettings] = useState<AppSettings>({
     showSkeleton: true,
     showJoints: true,
@@ -47,7 +48,18 @@ export function App() {
     theme: "cyber",
     minConfidence: 0.5,
     maxHands: 2,
+    soundEnabled: true,
+    soundVolume: 0.7,
+    soundTheme: "scifi",
+    motionWhoosh: true,
   });
+
+  // Sync settings with sound effects engine
+  useEffect(() => {
+    soundEffects.setEnabled(settings.soundEnabled);
+    soundEffects.setVolume(settings.soundVolume);
+    soundEffects.setTheme(settings.soundTheme);
+  }, [settings.soundEnabled, settings.soundVolume, settings.soundTheme]);
 
   // 1. Initialize MediaPipe Hand Landmarker
   const loadLandmarker = useCallback(async () => {
@@ -73,28 +85,56 @@ export function App() {
     loadLandmarker();
   }, [loadLandmarker]);
 
-  // Audio feedback when new gesture triggers
+  // Audio feedback when new gesture triggers or fast hand motion occurs
   const handleHandsDetected = useCallback(
     (hands: TrackedHand[]) => {
       setTrackedHands(hands);
 
-      if (hands.length > 0 && isAudioEnabled) {
+      if (hands.length > 0) {
         const primaryGesture = hands[0].gesture.name;
-        if (primaryGesture !== "Unknown" && primaryGesture !== lastGestureRef.current) {
-          lastGestureRef.current = primaryGesture;
-          soundEffects.playGestureChime();
+
+        // 1. Trigger gesture-specific sound FX when hand pose changes
+        if (settings.soundEnabled && primaryGesture !== "Unknown") {
+          if (primaryGesture !== lastGestureRef.current) {
+            lastGestureRef.current = primaryGesture;
+            soundEffects.playGestureSound(primaryGesture);
+          }
         }
-      } else if (hands.length === 0) {
+
+        // 2. Dynamic Motion Air-Whoosh sound FX on rapid hand wave/swipe
+        if (settings.soundEnabled && settings.motionWhoosh && hands[0].landmarks && hands[0].landmarks.length > 0) {
+          const wrist = hands[0].landmarks[0];
+          const now = performance.now();
+          if (lastWristPosRef.current) {
+            const dt = (now - lastWristPosRef.current.time) / 1000;
+            if (dt > 0.015 && dt < 0.25) {
+              const dx = wrist.x - lastWristPosRef.current.x;
+              const dy = wrist.y - lastWristPosRef.current.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              const speed = dist / dt; // screen distance per second
+              if (speed > 1.6) { // fast hand swipe action
+                const intensity = Math.min(1, (speed - 1.6) / 2.5);
+                soundEffects.playMotionWhoosh(intensity);
+              }
+            }
+          }
+          lastWristPosRef.current = { x: wrist.x, y: wrist.y, time: now };
+        }
+      } else {
         lastGestureRef.current = "";
+        lastWristPosRef.current = null;
       }
     },
-    [isAudioEnabled]
+    [settings.soundEnabled, settings.motionWhoosh]
   );
 
   const toggleAudio = () => {
-    const next = !isAudioEnabled;
-    setIsAudioEnabled(next);
+    const next = !settings.soundEnabled;
+    setSettings((prev) => ({ ...prev, soundEnabled: next }));
     soundEffects.setEnabled(next);
+    if (next) {
+      soundEffects.playGestureSound("Pointing", true);
+    }
   };
 
   const updateSettings = (newPartial: Partial<AppSettings>) => {
@@ -121,21 +161,21 @@ export function App() {
 
         {/* Header Action Toolbar */}
         <div className="header-actions">
-          {/* Audio Chime Toggle */}
+          {/* Audio FX Toggle */}
           <button
             onClick={toggleAudio}
-            className="hud-btn"
-            title={isAudioEnabled ? "Mute Gesture Audio" : "Enable Gesture Audio Chimes"}
+            className={`hud-btn ${settings.soundEnabled ? "hud-btn-primary" : ""}`}
+            title={settings.soundEnabled ? "Mute Action Sound FX" : "Enable Action Sound FX"}
           >
-            {isAudioEnabled ? (
+            {settings.soundEnabled ? (
               <>
                 <Volume2 style={{ width: "15px", height: "15px", color: "var(--cyan-glow)" }} />
-                <span>Audio On</span>
+                <span>Audio FX On</span>
               </>
             ) : (
               <>
                 <VolumeX style={{ width: "15px", height: "15px" }} />
-                <span>Audio Off</span>
+                <span>Audio FX Off</span>
               </>
             )}
           </button>
@@ -244,6 +284,13 @@ export function App() {
             hands={trackedHands}
             fps={fps}
             latencyMs={latencyMs}
+          />
+
+          {/* Sound FX Audio Engine & Interactive Soundboard */}
+          <SoundFxPanel
+            settings={settings}
+            onUpdateSettings={updateSettings}
+            activeGestureName={activeGesture}
           />
 
           {/* Overlay & Aesthetic Customizer */}

@@ -1,5 +1,6 @@
 import React from "react";
-import { X, Check } from "lucide-react";
+import { X, Check, Volume2 } from "lucide-react";
+import { soundEffects } from "../services/soundEffects";
 
 interface GestureGuideModalProps {
   isOpen: boolean;
@@ -91,6 +92,13 @@ export const GestureGuideModal: React.FC<GestureGuideModalProps> = ({
       emoji: "🤏",
       desc: "Bring thumb tip and index tip close together with fingers relaxed.",
       tips: "Fine motor pinch interaction.",
+    },
+    {
+      id: "MiddleFinger",
+      name: "Middle Finger",
+      emoji: "🖕",
+      desc: "Extend only your middle finger upright with remaining fingers folded into palm.",
+      tips: "Raise middle finger vertically with knuckles forward.",
     },
   ];
 
@@ -219,21 +227,42 @@ export const GestureGuideModal: React.FC<GestureGuideModalProps> = ({
                     <h4 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#ffffff" }}>
                       {g.name}
                     </h4>
-                    {isActive && (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "0.2rem",
-                          fontSize: "0.65rem",
-                          fontFamily: "var(--font-mono)",
-                          color: "var(--cyan-glow)",
-                          fontWeight: 700,
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          soundEffects.playGestureSound(g.id, true);
                         }}
+                        className="hud-btn"
+                        style={{
+                          padding: "0.2rem 0.45rem",
+                          fontSize: "0.68rem",
+                          borderRadius: "0.4rem",
+                          background: "rgba(0, 242, 254, 0.12)",
+                          borderColor: "rgba(0, 242, 254, 0.3)",
+                          color: "var(--cyan-glow)",
+                        }}
+                        title={`Preview ${g.name} sound effect`}
                       >
-                        <Check style={{ width: "11px", height: "11px" }} /> MATCH
-                      </span>
-                    )}
+                        <Volume2 style={{ width: "11px", height: "11px" }} />
+                        <span>FX</span>
+                      </button>
+                      {isActive && (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.2rem",
+                            fontSize: "0.65rem",
+                            fontFamily: "var(--font-mono)",
+                            color: "var(--cyan-glow)",
+                            fontWeight: 700,
+                          }}
+                        >
+                          <Check style={{ width: "11px", height: "11px" }} /> MATCH
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.2rem", lineHeight: 1.3 }}>
                     {g.desc}

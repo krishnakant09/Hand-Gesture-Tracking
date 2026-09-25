@@ -40,6 +40,7 @@ export interface TrackedHand {
 }
 
 export type ThemeName = 'cyber' | 'emerald' | 'sunset' | 'matrix';
+export type SoundTheme = 'scifi' | 'arcade' | 'zen' | 'mechanical';
 
 export interface ThemeColors {
   primary: string;
@@ -62,4 +63,8 @@ export interface AppSettings {
   theme: ThemeName;
   minConfidence: number;
   maxHands: number;
+  soundEnabled: boolean;
+  soundVolume: number;
+  soundTheme: SoundTheme;
+  motionWhoosh: boolean;
 }

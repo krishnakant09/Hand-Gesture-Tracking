@@ -14,6 +14,7 @@ Drop your own sound files (`.mp3`, `.wav`, `.ogg`, `.m4a`) here to replace any p
 - `OpenPalm.mp3` (or `openpalm.mp3`) - Open Palm action
 - `OK.mp3` (or `ok.mp3`) - OK sign action
 - `CallMe.mp3` (or `callme.mp3`) - Call Me / Shaka action
+- `MiddleFinger.mp3` (or `middlefinger.mp3`) - Middle Finger action
 - `Whoosh.mp3` (or `whoosh.mp3`) - Fast hand swipe / air slash action
 
 *You can also upload custom sound files directly from the UI in the Sound FX Engine panel without touching files!*

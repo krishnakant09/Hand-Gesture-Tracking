@@ -159,7 +159,7 @@ class SoundEffectsEngine {
   public autoLoadPublicSounds() {
     const commonGestures = [
       "Gun", "Fist", "Pinch", "ThumbsUp", "ThumbsDown",
-      "Peace", "RockOn", "Pointing", "OpenPalm", "OK", "CallMe", "Whoosh"
+      "Peace", "RockOn", "Pointing", "OpenPalm", "OK", "CallMe", "MiddleFinger", "Whoosh"
     ];
     commonGestures.forEach((g) => {
       this.loadCustomAudioFromUrl(g, `/sounds/${g}.mp3`, `${g}.mp3`).then((ok) => {

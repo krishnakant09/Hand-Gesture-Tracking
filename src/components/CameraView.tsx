@@ -33,21 +33,27 @@ export const CameraView: React.FC<CameraViewProps> = ({
   const lastFpsTimeRef = useRef<number>(performance.now());
   const animFrameIdRef = useRef<number | null>(null);
 
-  // 1. Enumerate available video devices
+  // Keep references to latest callbacks and settings to avoid re-triggering detection loop
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const onHandsDetectedRef = useRef(onHandsDetected);
+  onHandsDetectedRef.current = onHandsDetected;
+  const onFpsUpdateRef = useRef(onFpsUpdate);
+  onFpsUpdateRef.current = onFpsUpdate;
+
+  // 1. Enumerate available video devices without auto-selecting to avoid stream resets
   const getDevices = useCallback(async () => {
     try {
+      if (!navigator.mediaDevices?.enumerateDevices) return;
       const devices = await navigator.mediaDevices.enumerateDevices();
       const cameras = devices.filter((d) => d.kind === "videoinput");
       setVideoDevices(cameras);
-      if (cameras.length > 0 && !selectedDeviceId) {
-        setSelectedDeviceId(cameras[0].deviceId);
-      }
     } catch (e) {
       console.warn("Could not list video devices:", e);
     }
-  }, [selectedDeviceId]);
+  }, []);
 
-  // 2. Start webcam stream
+  // 2. Start webcam stream with fallback support
   const startCamera = useCallback(async () => {
     setCameraError(null);
     setIsStreamReady(false);
@@ -63,24 +69,51 @@ export const CameraView: React.FC<CameraViewProps> = ({
         currentStream.getTracks().forEach((t) => t.stop());
       }
 
-      const constraints: MediaStreamConstraints = {
-        audio: false,
-        video: {
-          deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: "user",
-        },
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().catch(console.error);
-          setIsStreamReady(true);
+      let stream: MediaStream;
+      try {
+        const constraints: MediaStreamConstraints = {
+          audio: false,
+          video: selectedDeviceId
+            ? { deviceId: { exact: selectedDeviceId } }
+            : {
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                facingMode: "user",
+              },
         };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (specificErr) {
+        console.warn("Specific constraints failed, falling back to basic video:", specificErr);
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
+
+      if (videoRef.current) {
+        const video = videoRef.current;
+        video.srcObject = stream;
+
+        const markStreamReady = () => {
+          video
+            .play()
+            .then(() => {
+              setIsStreamReady(true);
+              setIsCameraActive(true);
+            })
+            .catch((playErr) => {
+              console.warn("video.play() failed:", playErr);
+              setIsStreamReady(true);
+              setIsCameraActive(true);
+            });
+        };
+
+        if (video.readyState >= 2 && video.videoWidth > 0) {
+          markStreamReady();
+        } else {
+          video.onloadedmetadata = markStreamReady;
+          video.onloadeddata = markStreamReady;
+          video.oncanplay = markStreamReady;
+        }
+      }
+
       setIsCameraActive(true);
       await getDevices();
     } catch (err: any) {
@@ -107,8 +140,8 @@ export const CameraView: React.FC<CameraViewProps> = ({
     }
     setIsCameraActive(false);
     setIsStreamReady(false);
-    onHandsDetected([]);
-  }, [onHandsDetected]);
+    onHandsDetectedRef.current([]);
+  }, []);
 
   useEffect(() => {
     startCamera();
@@ -186,18 +219,18 @@ export const CameraView: React.FC<CameraViewProps> = ({
         // Draw Skeletal overlays
         const ctx = canvas.getContext("2d");
         if (ctx) {
-          drawHandOverlay(ctx, trackedHands, canvas.width, canvas.height, settings);
+          drawHandOverlay(ctx, trackedHands, canvas.width, canvas.height, settingsRef.current);
         }
 
         // Notify parent state
-        onHandsDetected(trackedHands);
+        onHandsDetectedRef.current(trackedHands);
 
         // Update FPS & latency metrics
         frameCountRef.current++;
         const now = performance.now();
         if (now - lastFpsTimeRef.current >= 500) {
           const fps = Math.round((frameCountRef.current * 1000) / (now - lastFpsTimeRef.current));
-          onFpsUpdate(fps, Math.round(latency));
+          onFpsUpdateRef.current(fps, Math.round(latency));
           frameCountRef.current = 0;
           lastFpsTimeRef.current = now;
         }
@@ -214,7 +247,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
         cancelAnimationFrame(animFrameIdRef.current);
       }
     };
-  }, [isCameraActive, isStreamReady, landmarker, settings, onHandsDetected, onFpsUpdate]);
+  }, [isCameraActive, isStreamReady, landmarker]);
 
   return (
     <div className="camera-wrapper">

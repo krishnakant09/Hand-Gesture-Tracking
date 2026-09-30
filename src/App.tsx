@@ -141,6 +141,11 @@ export function App() {
     setSettings((prev) => ({ ...prev, ...newPartial }));
   };
 
+  const handleFpsUpdate = useCallback((newFps: number, newLatency: number) => {
+    setFps(newFps);
+    setLatencyMs(newLatency);
+  }, []);
+
   const activeGesture = trackedHands.length > 0 ? trackedHands[0].gesture.name : undefined;
 
   return (
@@ -270,10 +275,7 @@ export function App() {
             landmarker={landmarker}
             settings={settings}
             onHandsDetected={handleHandsDetected}
-            onFpsUpdate={(newFps, newLatency) => {
-              setFps(newFps);
-              setLatencyMs(newLatency);
-            }}
+            onFpsUpdate={handleFpsUpdate}
           />
         </section>
 

@@ -5,6 +5,7 @@ import { detectHandsForVideo } from "../services/handLandmarker";
 import { recognizeGesture, analyzeFingerStates } from "../services/gestureRecognizer";
 import { drawHandOverlay } from "../services/canvasDrawer";
 import { createDrawingState, updateAirDrawing, clearDrawing } from "../services/airDrawing";
+import { soundEffects } from "../services/soundEffects";
 import { Camera, CameraOff, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
 
 interface CameraViewProps {
@@ -32,6 +33,21 @@ export const CameraView: React.FC<CameraViewProps> = ({
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const [isStreamReady, setIsStreamReady] = useState<boolean>(false);
+  const [shapeSnapToast, setShapeSnapToast] = useState<string | null>(null);
+  const shapeToastTimerRef = useRef<number | null>(null);
+
+  const handleShapeDetected = useCallback((detected: { label: string }) => {
+    setShapeSnapToast(detected.label);
+    if (settingsRef.current.soundEnabled) {
+      soundEffects.playGestureSound("OK", true);
+    }
+    if (shapeToastTimerRef.current) {
+      clearTimeout(shapeToastTimerRef.current);
+    }
+    shapeToastTimerRef.current = window.setTimeout(() => {
+      setShapeSnapToast(null);
+    }, 2200);
+  }, []);
 
   // FPS tracking refs
   const frameCountRef = useRef<number>(0);
@@ -45,6 +61,8 @@ export const CameraView: React.FC<CameraViewProps> = ({
   onHandsDetectedRef.current = onHandsDetected;
   const onFpsUpdateRef = useRef(onFpsUpdate);
   onFpsUpdateRef.current = onFpsUpdate;
+  const handleShapeDetectedRef = useRef(handleShapeDetected);
+  handleShapeDetectedRef.current = handleShapeDetected;
 
   // 1. Enumerate available video devices without auto-selecting to avoid stream resets
   const getDevices = useCallback(async () => {
@@ -255,6 +273,7 @@ export const CameraView: React.FC<CameraViewProps> = ({
             canvas.width,
             canvas.height,
             drawingStateRef.current,
+            (shape) => handleShapeDetectedRef.current(shape),
           );
         }
 
@@ -345,6 +364,14 @@ export const CameraView: React.FC<CameraViewProps> = ({
           transition: "opacity 0.2s ease",
         }}
       />
+
+      {/* Shape Auto-Assist Snap Toast Notification */}
+      {shapeSnapToast && (
+        <div className="shape-snap-toast">
+          <Sparkles style={{ width: "15px", height: "15px", color: "var(--cyan-glow)" }} />
+          <span>Auto-Snapped {shapeSnapToast}</span>
+        </div>
+      )}
 
       {/* Loading or Error State */}
       {(!isCameraActive || cameraError || !isStreamReady) && (

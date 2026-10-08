@@ -65,6 +65,7 @@ export function App() {
     drawingEnabled: false,
     drawColor: "#00f2fe",
     brushSize: 4,
+    shapeAssist: true,
   });
 
   // Sync settings with sound effects engine

@@ -54,12 +54,21 @@ Heuristic-based recognition engine evaluating 3D Euclidean distances, finger fle
 - **Interactive Soundboard**: Test and preview audio triggers directly with a dynamic equalizer waveform visualizer.
 - **Custom Audio Uploader**: Map your own audio files (`.mp3`, `.wav`, `.ogg`) to any gesture.
 
-### 4. ✏️ Mid-Air Drawing Canvas
+### 4. ✏️ Mid-Air Drawing Canvas & Shape Auto-Assist
 - **Air Paint Mode**: Point your index finger to draw in mid-air; curl your fingers into a fist to lift the pen without drawing.
+- **📐 Shape Auto-Assist (Smart Shapes)**:
+  - Automatically analyzes completed strokes on pen lift using Ramer-Douglas-Peucker simplification and geometric Shoelace polygon classification.
+  - Snaps rough hand-drawn strokes into perfect vector shapes:
+    - ⭕ **Circles**: Clean geometric circles evaluated via low centroid radial variance.
+    - ⬛ **Rectangles / Squares**: Crisp 4-corner bounding boxes.
+    - 🔺 **Triangles**: Sharp 3-vertex polygons.
+    - 📏 **Straight Lines**: Snaps linear paths with high start-to-end directness.
+  - Visual toast notification (`✨ Auto-Snapped Circle`) and audio chime confirmation on snap.
 - **Customization**:
   - Cyber color palette presets (Cyan, Magenta, Amber, Purple, Emerald, White)
   - Color picker for custom HEX colors
   - Brush size slider (1px – 20px)
+  - Shape Auto-Assist master toggle
   - One-click canvas clearing with smooth fading
 
 ### 5. 🎛️ Slide-Over Control Drawer

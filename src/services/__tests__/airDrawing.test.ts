@@ -4,8 +4,10 @@ import {
   createDrawingState,
   updateAirDrawing,
   clearDrawing,
+  detectShape,
   SMOOTHING_ALPHA,
   type DrawingSettings,
+  type Point,
 } from "../airDrawing";
 
 // --- Test helpers -----------------------------------------------------------
@@ -168,3 +170,164 @@ describe("airDrawing — clearDrawing", () => {
     expect(state.isPenDown).toBe(false);
   });
 });
+
+describe("airDrawing — Shape Auto-Assist (Smart Shapes)", () => {
+  function generateCirclePoints(cx: number, cy: number, r: number, count = 24): Point[] {
+    const points: Point[] = [];
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const jitter = (Math.sin(i * 3) - 0.5) * 1.5;
+      points.push({
+        x: cx + (r + jitter) * Math.cos(angle),
+        y: cy + (r + jitter) * Math.sin(angle),
+      });
+    }
+    points.push({ ...points[0] });
+    return points;
+  }
+
+  function generateRectPoints(x: number, y: number, w: number, h: number): Point[] {
+    const points: Point[] = [];
+    for (let i = 0; i <= 6; i++) points.push({ x: x + (w * i) / 6, y });
+    for (let i = 1; i <= 6; i++) points.push({ x: x + w, y: y + (h * i) / 6 });
+    for (let i = 5; i >= 0; i--) points.push({ x: x + (w * i) / 6, y: y + h });
+    for (let i = 5; i >= 0; i--) points.push({ x, y: y + (h * i) / 6 });
+    return points;
+  }
+
+  function generateTrianglePoints(p1: Point, p2: Point, p3: Point): Point[] {
+    const points: Point[] = [];
+    for (let i = 0; i <= 6; i++) points.push({ x: p1.x + ((p2.x - p1.x) * i) / 6, y: p1.y + ((p2.y - p1.y) * i) / 6 });
+    for (let i = 1; i <= 6; i++) points.push({ x: p2.x + ((p3.x - p2.x) * i) / 6, y: p2.y + ((p3.y - p2.y) * i) / 6 });
+    for (let i = 1; i <= 6; i++) points.push({ x: p3.x + ((p1.x - p3.x) * i) / 6, y: p3.y + ((p1.y - p3.y) * i) / 6 });
+    return points;
+  }
+
+  function generateLinePoints(x1: number, y1: number, x2: number, y2: number, count = 12): Point[] {
+    const points: Point[] = [];
+    for (let i = 0; i <= count; i++) {
+      const t = i / count;
+      points.push({ x: x1 + (x2 - x1) * t, y: y1 + (y2 - y1) * t });
+    }
+    return points;
+  }
+
+  it("detects a circular stroke as a Circle", () => {
+    const circlePts = generateCirclePoints(150, 150, 50);
+    const shape = detectShape(circlePts, "#00f2fe", 4);
+    expect(shape).not.toBeNull();
+    expect(shape?.type).toBe("circle");
+    expect(shape?.label).toBe("Circle");
+    expect(shape?.stroke.center).toBeDefined();
+    expect(Math.abs((shape?.stroke.radius || 0) - 50)).toBeLessThan(5);
+  });
+
+  it("detects a rectangular stroke as a Rectangle", () => {
+    const rectPts = generateRectPoints(100, 100, 80, 60);
+    const shape = detectShape(rectPts, "#00f2fe", 4);
+    expect(shape).not.toBeNull();
+    expect(shape?.type).toBe("rectangle");
+    expect(shape?.label).toBe("Rectangle");
+    expect(shape?.stroke.rect?.width).toBe(80);
+    expect(shape?.stroke.rect?.height).toBe(60);
+  });
+
+  it("detects a 3-corner closed polygon as a Triangle", () => {
+    const triPts = generateTrianglePoints({ x: 100, y: 150 }, { x: 150, y: 50 }, { x: 200, y: 150 });
+    const shape = detectShape(triPts, "#00f2fe", 4);
+    expect(shape).not.toBeNull();
+    expect(shape?.type).toBe("triangle");
+    expect(shape?.label).toBe("Triangle");
+    expect(shape?.stroke.triangle).toHaveLength(3);
+  });
+
+  it("detects a continuous linear stroke as a Straight Line", () => {
+    const linePts = generateLinePoints(50, 50, 200, 200);
+    const shape = detectShape(linePts, "#00f2fe", 4);
+    expect(shape).not.toBeNull();
+    expect(shape?.type).toBe("line");
+    expect(shape?.label).toBe("Straight Line");
+    expect(shape?.stroke.line?.start).toEqual({ x: 50, y: 50 });
+    expect(shape?.stroke.line?.end).toEqual({ x: 200, y: 200 });
+  });
+
+  it("snaps a completed stroke on pen lift when shapeAssist is active", () => {
+    const { ctx, calls } = createMockCtx();
+    const state = createDrawingState();
+    let detectedCallbackShape: string | null = null;
+
+    // Simulate drawing points of a circle
+    const circlePts = generateCirclePoints(50, 50, 25);
+    for (const pt of circlePts) {
+      updateAirDrawing(
+        ctx,
+        [makeHand("Pointing", pt.x / 100, pt.y / 100)],
+        { ...settingsOn, shapeAssist: true },
+        W,
+        H,
+        state,
+        (detected) => {
+          detectedCallbackShape = detected.label;
+        },
+      );
+    }
+
+    // Lift pen with Fist
+    updateAirDrawing(
+      ctx,
+      [makeHand("Fist", 0.5, 0.5)],
+      { ...settingsOn, shapeAssist: true },
+      W,
+      H,
+      state,
+      (detected) => {
+        detectedCallbackShape = detected.label;
+      },
+    );
+
+    expect(detectedCallbackShape).toBe("Circle");
+    expect(state.strokes.length).toBe(1);
+    expect(state.strokes[0].type).toBe("circle");
+    // Canvas was redrawn with snapped stroke
+    expect(calls.some((c) => c.op === "clearRect")).toBe(true);
+  });
+
+  it("preserves freehand stroke when shapeAssist is toggled off", () => {
+    const { ctx } = createMockCtx();
+    const state = createDrawingState();
+    let detectedCallbackShape: string | null = null;
+
+    const circlePts = generateCirclePoints(50, 50, 25);
+    for (const pt of circlePts) {
+      updateAirDrawing(
+        ctx,
+        [makeHand("Pointing", pt.x / 100, pt.y / 100)],
+        { ...settingsOn, shapeAssist: false },
+        W,
+        H,
+        state,
+        (detected) => {
+          detectedCallbackShape = detected.label;
+        },
+      );
+    }
+
+    // Lift pen with Fist
+    updateAirDrawing(
+      ctx,
+      [makeHand("Fist", 0.5, 0.5)],
+      { ...settingsOn, shapeAssist: false },
+      W,
+      H,
+      state,
+      (detected) => {
+        detectedCallbackShape = detected.label;
+      },
+    );
+
+    expect(detectedCallbackShape).toBeNull();
+    expect(state.strokes.length).toBe(1);
+    expect(state.strokes[0].type).toBe("freehand");
+  });
+});
+

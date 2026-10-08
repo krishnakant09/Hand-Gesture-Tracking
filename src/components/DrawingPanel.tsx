@@ -1,6 +1,6 @@
 import React from "react";
 import type { AppSettings } from "../types";
-import { Brush, Palette, Eraser, Trash2 } from "lucide-react";
+import { Brush, Palette, Eraser, Trash2, Wand2 } from "lucide-react";
 
 interface DrawingPanelProps {
   settings: AppSettings;
@@ -50,7 +50,7 @@ export const DrawingPanel: React.FC<DrawingPanelProps> = ({
                 color: "var(--text-main)",
               }}
             >
-              Air Drawing
+              Air Drawing Studio
             </h3>
             <p style={{ fontSize: "0.7rem", color: "var(--text-muted)" }}>
               Point to draw · Fist to lift pen
@@ -77,6 +77,80 @@ export const DrawingPanel: React.FC<DrawingPanelProps> = ({
           gap: "0.85rem",
         }}
       >
+        {/* Shape Auto-Assist (Smart Shapes) Toggle */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "rgba(11, 15, 25, 0.6)",
+            padding: "0.6rem 0.75rem",
+            borderRadius: "0.75rem",
+            border: "1px solid var(--border-subtle)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <div
+              style={{
+                width: "26px",
+                height: "26px",
+                borderRadius: "6px",
+                background: settings.shapeAssist
+                  ? "rgba(0, 242, 254, 0.2)"
+                  : "rgba(100, 116, 139, 0.15)",
+                border: `1px solid ${
+                  settings.shapeAssist ? "var(--cyan-glow)" : "var(--border-subtle)"
+                }`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: settings.shapeAssist ? "var(--cyan-glow)" : "var(--text-dim)",
+              }}
+            >
+              <Wand2 style={{ width: "13px", height: "13px" }} />
+            </div>
+            <div>
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  color: "var(--text-main)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.35rem",
+                }}
+              >
+                <span>Shape Auto-Assist</span>
+                {settings.shapeAssist && (
+                  <span
+                    style={{
+                      fontSize: "0.58rem",
+                      fontFamily: "var(--font-mono)",
+                      color: "var(--emerald-bright)",
+                      background: "rgba(16, 185, 129, 0.15)",
+                      border: "1px solid rgba(16, 185, 129, 0.3)",
+                      padding: "0.05rem 0.35rem",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    SMART
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: "0.64rem", color: "var(--text-muted)" }}>
+                Snaps rough circles, boxes, triangles & lines
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => onUpdateSettings({ shapeAssist: !settings.shapeAssist })}
+            className={`toggle-btn ${settings.shapeAssist ? "active" : ""}`}
+            style={{ padding: "0.25rem 0.65rem", fontSize: "0.68rem" }}
+          >
+            {settings.shapeAssist ? "ON" : "OFF"}
+          </button>
+        </div>
         {/* Color swatches + custom picker */}
         <div>
           <div

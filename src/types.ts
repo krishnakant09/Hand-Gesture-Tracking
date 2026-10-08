@@ -70,4 +70,5 @@ export interface AppSettings {
   drawingEnabled: boolean;
   drawColor: string;
   brushSize: number;
+  shapeAssist: boolean;
 }

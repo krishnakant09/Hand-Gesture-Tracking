@@ -159,7 +159,8 @@ class SoundEffectsEngine {
   public autoLoadPublicSounds() {
     const commonGestures = [
       "Gun", "Fist", "Pinch", "ThumbsUp", "ThumbsDown",
-      "Peace", "RockOn", "Pointing", "OpenPalm", "OK", "CallMe", "MiddleFinger", "Whoosh"
+      "Peace", "RockOn", "Pointing", "OpenPalm", "OK", "CallMe", "MiddleFinger", "Whoosh",
+      "Vulcan", "ILY", "Four",
     ];
     commonGestures.forEach((g) => {
       this.loadCustomAudioFromUrl(g, `/sounds/${g}.mp3`, `${g}.mp3`).then((ok) => {
@@ -471,6 +472,66 @@ class SoundEffectsEngine {
         break;
       }
 
+      // 🖖 Vulcan Salute: Futuristic Shimmer (detuned dual sine with slow decay)
+      case "Vulcan": {
+        [880, 1108.73].forEach((freq, i) => {
+          // A5, C#6
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, t + i * 0.02);
+          gain.gain.setValueAtTime(0, t + i * 0.02);
+          gain.gain.linearRampToValueAtTime(0.12, t + i * 0.02 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.02 + 0.4);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain!);
+          osc.start(t + i * 0.02);
+          osc.stop(t + i * 0.02 + 0.4);
+        });
+        break;
+      }
+
+      // 🤟 I Love You: Warm Heart Chime (soft major third, triangle)
+      case "ILY": {
+        [523.25, 659.25].forEach((freq) => {
+          // C5, E5
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.13, t + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain!);
+          osc.start(t);
+          osc.stop(t + 0.35);
+        });
+        break;
+      }
+
+      // 4️⃣ Four Fingers: Ascending Count Blips (four quick steps)
+      case "Four": {
+        [659.25, 783.99, 987.77, 1174.66].forEach((freq, idx) => {
+          // E5, G5, B5, D6
+          const start = t + idx * 0.06;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "square";
+          osc.frequency.setValueAtTime(freq, start);
+          gain.gain.setValueAtTime(0.1, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.05);
+
+          osc.connect(gain);
+          gain.connect(this.masterGain!);
+          osc.start(start);
+          osc.stop(start + 0.05);
+        });
+        break;
+      }
+
       default: {
         this.playDefaultBlip(ctx);
         break;
@@ -619,6 +680,9 @@ class SoundEffectsEngine {
       OpenPalm: 392.00,// G4
       OK: 1174.66,     // D6
       CallMe: 587.33,  // D5
+      Vulcan: 880.00,  // A5
+      ILY: 523.25,     // C5
+      Four: 783.99,    // G5
     };
 
     const freq = baseFreqs[gesture] || 523.25;

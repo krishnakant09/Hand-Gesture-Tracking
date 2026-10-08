@@ -4,6 +4,7 @@ import type { TrackedHand, AppSettings, NormalizedLandmark } from "../types";
 import { detectHandsForVideo } from "../services/handLandmarker";
 import { recognizeGesture, analyzeFingerStates } from "../services/gestureRecognizer";
 import { drawHandOverlay } from "../services/canvasDrawer";
+import { createDrawingState, updateAirDrawing, clearDrawing } from "../services/airDrawing";
 import { Camera, CameraOff, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
 
 interface CameraViewProps {
@@ -11,6 +12,7 @@ interface CameraViewProps {
   settings: AppSettings;
   onHandsDetected: (hands: TrackedHand[]) => void;
   onFpsUpdate: (fps: number, latencyMs: number) => void;
+  clearRequest?: number;
 }
 
 export const CameraView: React.FC<CameraViewProps> = ({
@@ -18,9 +20,12 @@ export const CameraView: React.FC<CameraViewProps> = ({
   settings,
   onHandsDetected,
   onFpsUpdate,
+  clearRequest,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawCanvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingStateRef = useRef(createDrawingState());
 
   const [isCameraActive, setIsCameraActive] = useState<boolean>(true);
   const [cameraError, setCameraError] = useState<string | null>(null);
@@ -150,6 +155,14 @@ export const CameraView: React.FC<CameraViewProps> = ({
     };
   }, [startCamera, stopCamera]);
 
+  // Clear the persistent air-drawing canvas when the DrawingPanel requests it.
+  useEffect(() => {
+    const canvas = drawCanvasRef.current;
+    if (!canvas || !canvas.width || !canvas.height) return;
+    const ctx = canvas.getContext("2d");
+    if (ctx) clearDrawing(ctx, canvas.width, canvas.height, drawingStateRef.current);
+  }, [clearRequest]);
+
   // 3. Real-time Detection Loop
   useEffect(() => {
     if (!isCameraActive || !isStreamReady || !landmarker) return;
@@ -167,6 +180,15 @@ export const CameraView: React.FC<CameraViewProps> = ({
         if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
           canvas.width = video.videoWidth;
           canvas.height = video.videoHeight;
+          const drawCanvas = drawCanvasRef.current;
+          if (
+            drawCanvas &&
+            (drawCanvas.width !== video.videoWidth ||
+              drawCanvas.height !== video.videoHeight)
+          ) {
+            drawCanvas.width = video.videoWidth;
+            drawCanvas.height = video.videoHeight;
+          }
         }
 
         const startTime = performance.now();
@@ -220,6 +242,20 @@ export const CameraView: React.FC<CameraViewProps> = ({
         const ctx = canvas.getContext("2d");
         if (ctx) {
           drawHandOverlay(ctx, trackedHands, canvas.width, canvas.height, settingsRef.current);
+        }
+
+        // Air draw onto the PERSISTENT canvas (pen down only while Pointing).
+        // This canvas is never cleared per-frame, so strokes remain visible.
+        const drawCtx = drawCanvasRef.current?.getContext("2d");
+        if (drawCtx) {
+          updateAirDrawing(
+            drawCtx,
+            trackedHands,
+            settingsRef.current,
+            canvas.width,
+            canvas.height,
+            drawingStateRef.current,
+          );
         }
 
         // Notify parent state
@@ -293,6 +329,22 @@ export const CameraView: React.FC<CameraViewProps> = ({
           }}
         />
       )}
+
+      {/* Persistent Air-Drawing Canvas (strokes preserved across frames) */}
+      <canvas
+        ref={drawCanvasRef}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          pointerEvents: "none",
+          zIndex: 3,
+          opacity: settings.drawingEnabled ? 1 : 0,
+          transition: "opacity 0.2s ease",
+        }}
+      />
 
       {/* Loading or Error State */}
       {(!isCameraActive || cameraError || !isStreamReady) && (

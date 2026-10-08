@@ -67,4 +67,7 @@ export interface AppSettings {
   soundVolume: number;
   soundTheme: SoundTheme;
   motionWhoosh: boolean;
+  drawingEnabled: boolean;
+  drawColor: string;
+  brushSize: number;
 }

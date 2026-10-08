@@ -24,6 +24,20 @@ export const GestureGuideModal: React.FC<GestureGuideModalProps> = ({
       tips: "Keep your palm facing toward the camera lens.",
     },
     {
+      id: "Vulcan",
+      name: "Vulcan Salute",
+      emoji: "🖖",
+      desc: "Extend all four fingers and split a V between the middle and ring fingers.",
+      tips: "Live long and prosper — thumb can be out or relaxed.",
+    },
+    {
+      id: "Four",
+      name: "Four Fingers",
+      emoji: "4️⃣",
+      desc: "Raise index, middle, ring, and pinky fingers; fold the thumb across the palm.",
+      tips: "Keep the four fingers together and tuck the thumb in.",
+    },
+    {
       id: "Fist",
       name: "Closed Fist",
       emoji: "✊",
@@ -64,6 +78,13 @@ export const GestureGuideModal: React.FC<GestureGuideModalProps> = ({
       emoji: "🤘",
       desc: "Extend index and pinky fingers, curl middle and ring fingers.",
       tips: "Heavy metal horns pose.",
+    },
+    {
+      id: "ILY",
+      name: "I Love You",
+      emoji: "🤟",
+      desc: "Extend thumb, index, and pinky fingers; curl middle and ring fingers.",
+      tips: "ASL sign for \"I Love You\".",
     },
     {
       id: "OK",

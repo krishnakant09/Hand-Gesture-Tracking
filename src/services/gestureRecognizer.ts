@@ -119,7 +119,38 @@ export function recognizeGesture(
     };
   }
 
-  // 3. Open Palm: All 5 fingers extended
+  // 3. Vulcan Salute: All four fingers extended with a V-gap between middle & ring
+  if (fingers.index && fingers.middle && fingers.ring && fingers.pinky) {
+    const gapMR = get2DDist(landmarks[12], landmarks[16]); // middle tip <-> ring tip
+    const gapIM = get2DDist(landmarks[8], landmarks[12]); // index tip <-> middle tip
+    const gapRP = get2DDist(landmarks[16], landmarks[20]); // ring tip <-> pinky tip
+    const avgAdj = (gapIM + gapRP) / 2;
+    if (avgAdj > 1e-6 && gapMR > avgAdj * 1.7) {
+      return {
+        name: 'Vulcan',
+        label: 'Vulcan Salute',
+        emoji: '🖖',
+        confidence: 0.9,
+        description: 'Live long and prosper — V split between middle and ring fingers',
+      };
+    }
+  }
+
+  // 3b. Four Fingers: Four fingers extended with the thumb tucked across the palm
+  if (fingers.index && fingers.middle && fingers.ring && fingers.pinky) {
+    const thumbTucked = get2DDist(landmarks[4], landmarks[5]) < 0.09;
+    if (thumbTucked) {
+      return {
+        name: 'Four',
+        label: 'Four Fingers',
+        emoji: '4️⃣',
+        confidence: 0.88,
+        description: 'Four fingers raised with thumb folded across the palm',
+      };
+    }
+  }
+
+  // 4. Open Palm: All 5 fingers extended
   if (fingers.thumb && fingers.index && fingers.middle && fingers.ring && fingers.pinky) {
     return {
       name: 'OpenPalm',
@@ -228,8 +259,19 @@ export function recognizeGesture(
     };
   }
 
-  // 7. Rock On / Horns: Index + Pinky extended, middle + ring curled
-  if (fingers.index && !fingers.middle && !fingers.ring && fingers.pinky) {
+  // 7. I Love You (ASL): Thumb + index + pinky extended, middle & ring curled
+  if (fingers.thumb && fingers.index && !fingers.middle && !fingers.ring && fingers.pinky) {
+    return {
+      name: 'ILY',
+      label: 'I Love You',
+      emoji: '🤟',
+      confidence: 0.92,
+      description: 'ASL "I Love You" — thumb, index, and pinky extended',
+    };
+  }
+
+  // 8. Rock On / Horns: Index + pinky extended, middle + ring curled, thumb folded
+  if (!fingers.thumb && fingers.index && !fingers.middle && !fingers.ring && fingers.pinky) {
     return {
       name: 'RockOn',
       label: 'Rock On / Horns',
@@ -255,7 +297,7 @@ export function recognizeGesture(
     return {
       name: 'Three',
       label: 'Three Fingers',
-      emoji: '🤟',
+      emoji: '3️⃣',
       confidence: 0.89,
       description: 'Index, middle, and ring extended',
     };

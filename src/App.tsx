@@ -5,8 +5,8 @@ import { initializeHandLandmarker } from "./services/handLandmarker";
 import { soundEffects } from "./services/soundEffects";
 import { CameraView } from "./components/CameraView";
 import { GestureHud } from "./components/GestureHud";
-import { ControlsPanel } from "./components/ControlsPanel";
-import { SoundFxPanel } from "./components/SoundFxPanel";
+import { ControlDrawer, type DrawerTabId } from "./components/ControlDrawer";
+import { DrawerQuickLauncher } from "./components/DrawerQuickLauncher";
 import { GestureGuideModal } from "./components/GestureGuideModal";
 import {
   Hand,
@@ -17,6 +17,7 @@ import {
   Sparkles,
   RefreshCw,
   AlertTriangle,
+  Sliders,
 } from "lucide-react";
 
 export function App() {
@@ -31,10 +32,19 @@ export function App() {
   const [fps, setFps] = useState<number>(0);
   const [latencyMs, setLatencyMs] = useState<number>(0);
 
-  // Modals & Motion Tracking
+  // Modals, Drawer & Motion Tracking
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
+  const [drawerTab, setDrawerTab] = useState<DrawerTabId>("sound");
+  // Incremented to ask CameraView to wipe the persistent air-drawing canvas.
+  const [clearRequest, setClearRequest] = useState<number>(0);
   const lastGestureRef = useRef<string>("");
   const lastWristPosRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const openDrawer = (tab: DrawerTabId) => {
+    setDrawerTab(tab);
+    setIsDrawerOpen(true);
+  };
 
   // Settings with Sound FX
   const [settings, setSettings] = useState<AppSettings>({
@@ -52,6 +62,9 @@ export function App() {
     soundVolume: 0.7,
     soundTheme: "scifi",
     motionWhoosh: true,
+    drawingEnabled: false,
+    drawColor: "#00f2fe",
+    brushSize: 4,
   });
 
   // Sync settings with sound effects engine
@@ -188,10 +201,20 @@ export function App() {
           {/* Gesture Guide Reference */}
           <button
             onClick={() => setIsGuideOpen(true)}
-            className="hud-btn hud-btn-primary"
+            className="hud-btn"
           >
             <BookOpen style={{ width: "15px", height: "15px" }} />
             <span>Gesture Guide</span>
+          </button>
+
+          {/* Control Drawer Trigger */}
+          <button
+            onClick={() => openDrawer("all")}
+            className="hud-btn hud-btn-primary"
+            title="Open Sound FX, Air Drawing & Visual Tracking Drawer"
+          >
+            <Sliders style={{ width: "15px", height: "15px" }} />
+            <span>Control Drawer</span>
           </button>
 
           {/* Hardware acceleration badge */}
@@ -276,10 +299,11 @@ export function App() {
             settings={settings}
             onHandsDetected={handleHandsDetected}
             onFpsUpdate={handleFpsUpdate}
+            clearRequest={clearRequest}
           />
         </section>
 
-        {/* Right Column: Gesture Readout & Visual Controls */}
+        {/* Right Column: Gesture Readout & Control Drawer Quick Launcher */}
         <aside className="sidebar-column">
           {/* Biometric & Gesture Recognition HUD */}
           <GestureHud
@@ -288,17 +312,14 @@ export function App() {
             latencyMs={latencyMs}
           />
 
-          {/* Sound FX Audio Engine & Interactive Soundboard */}
-          <SoundFxPanel
+          {/* Quick Access Control Hub for Sound FX, Air Drawing & Visual Controls */}
+          <DrawerQuickLauncher
             settings={settings}
-            onUpdateSettings={updateSettings}
-            activeGestureName={activeGesture}
-          />
-
-          {/* Overlay & Aesthetic Customizer */}
-          <ControlsPanel
-            settings={settings}
-            onUpdateSettings={updateSettings}
+            onOpenDrawer={openDrawer}
+            onToggleAudio={toggleAudio}
+            onToggleDrawing={() =>
+              updateSettings({ drawingEnabled: !settings.drawingEnabled })
+            }
           />
         </aside>
       </main>
@@ -314,6 +335,29 @@ export function App() {
           <span className="tech-tag">Kinematic Gesture Heuristics</span>
         </div>
       </footer>
+
+      {/* Floating Control Drawer Trigger on viewport edge */}
+      <button
+        onClick={() => openDrawer(drawerTab)}
+        className="floating-drawer-tab"
+        title="Open Control Drawer (Sound FX, Air Drawing & Visual Controls)"
+        aria-label="Open Control Drawer"
+      >
+        <Sliders style={{ width: "13px", height: "13px" }} />
+        <span>CONTROL DRAWER</span>
+      </button>
+
+      {/* Slide-Over Control Drawer Component */}
+      <ControlDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        activeTab={drawerTab}
+        onTabChange={setDrawerTab}
+        settings={settings}
+        onUpdateSettings={updateSettings}
+        activeGestureName={activeGesture}
+        onClearDrawing={() => setClearRequest((c) => c + 1)}
+      />
 
       {/* Interactive Gesture Guide Modal */}
       <GestureGuideModal

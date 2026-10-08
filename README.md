@@ -71,7 +71,25 @@ Heuristic-based recognition engine evaluating 3D Euclidean distances, finger fle
   - Shape Auto-Assist master toggle
   - One-click canvas clearing with smooth fading
 
-### 5. 🎛️ Slide-Over Control Drawer
+### 5. 🖱️ Touchless "Air Mouse" & Holographic Spatial Buttons
+- **Touchless Virtual Cursor**:
+  - Index fingertip acts as an optical laser cursor mapped smoothly across the viewport with EMA jitter suppression.
+  - Glowing target reticle with dynamic state HUD (`[CLICK]`, `[SCROLL]`, `[TAP / PINCH]`, and coordinate tracking).
+- **🤏 Fine-Motor Pinch Clicking**:
+  - Bringing thumb tip and index fingertip together within 3D Euclidean threshold triggers an instant virtual click.
+  - Pinch pulse wave animations and synthetic mechanical audio feedback.
+- **✌️ Dual-Finger Air Scrolling**:
+  - Raising index and middle fingers together allows natural touchless page and container scrolling by moving hand up/down.
+- **🔘 Floating Holographic Spatial Buttons**:
+  - Interactive cyber buttons rendered along the upper HUD rack of the camera feed:
+    - ✏️ **AIR DRAW**: Instant toggle between drawing mode and gesture tracking.
+    - 🗑️ **CLEAR**: Instantly wipes the persistent air canvas.
+    - 🔊 **AUDIO FX**: Master mute / unmute toggle.
+    - 🎨 **PALETTE**: Cycles hologram visual themes (*Cyber Neon, Emerald Bio, Sunset Coral, Matrix Green*).
+    - 🎛️ **CONTROLS**: Directly slides out the full Control Drawer.
+  - **Dwell & Pinch Activation**: Hovering your fingertip over a button fills a circular SVG neon progress ring (600ms dwell activation) or pinch to trigger immediately with recoil animation.
+
+### 6. 🎛️ Slide-Over Control Drawer
 - **Dedicated Off-Canvas Drawer**: Smooth slide-in glassmorphism panel (`min(520px, 100vw)`) accessible via:
   - Header toolbar button (`Control Drawer`)
   - Floating cyber tab on the right edge of the screen

@@ -66,6 +66,8 @@ export function App() {
     drawColor: "#00f2fe",
     brushSize: 4,
     shapeAssist: true,
+    airMouseEnabled: true,
+    hologramButtonsEnabled: true,
   });
 
   // Sync settings with sound effects engine
@@ -301,6 +303,8 @@ export function App() {
             onHandsDetected={handleHandsDetected}
             onFpsUpdate={handleFpsUpdate}
             clearRequest={clearRequest}
+            onUpdateSettings={updateSettings}
+            onOpenDrawer={() => openDrawer("all")}
           />
         </section>
 

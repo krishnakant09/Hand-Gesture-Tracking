@@ -71,4 +71,6 @@ export interface AppSettings {
   drawColor: string;
   brushSize: number;
   shapeAssist: boolean;
+  airMouseEnabled: boolean;
+  hologramButtonsEnabled: boolean;
 }

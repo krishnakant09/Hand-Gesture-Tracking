@@ -1015,3 +1015,278 @@ body.drawer-open {
   100% { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 
+/* ==========================================================================
+   Hologram Spatial Buttons & Touchless Air Mouse
+   ========================================================================== */
+.hologram-overlay-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.hologram-buttons-rack {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hologram-btn-card {
+  position: absolute;
+  pointer-events: auto;
+  background: rgba(8, 14, 28, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 0.8rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  user-select: none;
+}
+
+.hologram-btn-card:hover,
+.hologram-btn-card.hovered {
+  background: rgba(14, 23, 45, 0.94);
+  border-color: var(--cyan-glow);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 22px rgba(0, 242, 254, 0.45), 0 12px 28px rgba(0, 0, 0, 0.85);
+}
+
+.hologram-btn-card.pressed {
+  transform: scale(0.96);
+  border-color: #ffffff;
+  background: rgba(0, 242, 254, 0.35);
+  box-shadow: 0 0 30px rgba(0, 242, 254, 0.8);
+}
+
+/* Dwell Progress Ring SVG */
+.dwell-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.dwell-ring-bg {
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 2;
+  fill: none;
+}
+
+.dwell-ring-stroke {
+  stroke: var(--cyan-glow);
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.05s linear;
+  filter: drop-shadow(0 0 4px var(--cyan-glow));
+}
+
+.hologram-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  z-index: 2;
+}
+
+.hologram-btn-icon-wrap {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hologram-btn-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.hologram-btn-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hologram-btn-subtitle {
+  font-size: 0.52rem;
+  font-family: var(--font-mono);
+  color: var(--cyan-glow);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cyber corner brackets on buttons */
+.corner-bracket {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-color: var(--cyan-glow);
+  opacity: 0.6;
+}
+
+.corner-bracket.tl {
+  top: 3px;
+  left: 3px;
+  border-top: 1.5px solid;
+  border-left: 1.5px solid;
+}
+
+.corner-bracket.br {
+  bottom: 3px;
+  right: 3px;
+  border-bottom: 1.5px solid;
+  border-right: 1.5px solid;
+}
+
+/* Virtual Air Mouse Cursor */
+.air-mouse-cursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  margin-top: -18px;
+  margin-left: -18px;
+  pointer-events: none;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  transition: transform 0.03s linear;
+}
+
+.reticle-outer {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--cyan-glow);
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.4);
+  animation: reticleSpin 8s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes reticleSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.crosshair-tick {
+  position: absolute;
+  background: var(--cyan-glow);
+}
+.crosshair-tick.top { top: -4px; width: 1.5px; height: 4px; }
+.crosshair-tick.bottom { bottom: -4px; width: 1.5px; height: 4px; }
+.crosshair-tick.left { left: -4px; width: 4px; height: 1.5px; }
+.crosshair-tick.right { right: -4px; width: 4px; height: 1.5px; }
+
+.reticle-core {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 0 8px var(--cyan-glow), 0 0 16px #ffffff;
+}
+
+.air-mouse-cursor.pinching .reticle-outer {
+  border-style: solid;
+  border-color: #ffffff;
+  transform: scale(0.75);
+  box-shadow: 0 0 16px #ffffff, 0 0 25px var(--cyan-glow);
+}
+
+.air-mouse-cursor.pinching .reticle-core {
+  background: var(--cyan-glow);
+  transform: scale(1.4);
+}
+
+.air-mouse-cursor.on-target .reticle-outer {
+  border-color: var(--emerald-bright);
+  box-shadow: 0 0 15px var(--emerald-bright);
+}
+
+.pinch-pulse-wave {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 2px solid var(--cyan-glow);
+  animation: pinchPulse 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pinchPulse {
+  0% { transform: scale(0.5); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+.cursor-hud-pill {
+  position: absolute;
+  top: 24px;
+  left: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.pinch-badge {
+  background: rgba(0, 242, 254, 0.25);
+  border: 1px solid var(--cyan-glow);
+  color: #ffffff;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+}
+
+.scroll-badge {
+  background: rgba(168, 85, 247, 0.25);
+  border: 1px solid var(--purple-bright);
+  color: #ffffff;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.target-badge {
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid var(--emerald-bright);
+  color: var(--emerald-bright);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.coord-badge {
+  background: rgba(11, 15, 25, 0.85);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  padding: 0.08rem 0.35rem;
+  border-radius: 4px;
+}
+
+

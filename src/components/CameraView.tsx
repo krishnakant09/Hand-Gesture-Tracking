@@ -1,12 +1,72 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { HandLandmarker } from "@mediapipe/tasks-vision";
-import type { TrackedHand, AppSettings, NormalizedLandmark } from "../types";
+import type { TrackedHand, AppSettings, NormalizedLandmark, ThemeName } from "../types";
 import { detectHandsForVideo } from "../services/handLandmarker";
 import { recognizeGesture, analyzeFingerStates } from "../services/gestureRecognizer";
 import { drawHandOverlay } from "../services/canvasDrawer";
 import { createDrawingState, updateAirDrawing, clearDrawing } from "../services/airDrawing";
+import {
+  createAirMouseState,
+  updateAirMouse,
+  type HologramButtonDef,
+  type AirMouseState,
+} from "../services/airMouse";
+import { HologramButtonsOverlay } from "./HologramButtonsOverlay";
 import { soundEffects } from "../services/soundEffects";
 import { Camera, CameraOff, RefreshCw, AlertCircle, Sparkles } from "lucide-react";
+
+const HOLOGRAM_BUTTONS: HologramButtonDef[] = [
+  {
+    id: "toggle-draw",
+    label: "AIR DRAW",
+    sublabel: "PEN",
+    icon: "Brush",
+    x: 0.02,
+    y: 0.035,
+    width: 0.175,
+    height: 0.095,
+  },
+  {
+    id: "clear-canvas",
+    label: "CLEAR",
+    sublabel: "CANVAS",
+    icon: "Trash2",
+    x: 0.215,
+    y: 0.035,
+    width: 0.165,
+    height: 0.095,
+  },
+  {
+    id: "toggle-audio",
+    label: "AUDIO FX",
+    sublabel: "SYNTH",
+    icon: "Volume2",
+    x: 0.40,
+    y: 0.035,
+    width: 0.175,
+    height: 0.095,
+  },
+  {
+    id: "cycle-theme",
+    label: "PALETTE",
+    sublabel: "THEME",
+    icon: "Palette",
+    x: 0.595,
+    y: 0.035,
+    width: 0.175,
+    height: 0.095,
+  },
+  {
+    id: "open-drawer",
+    label: "CONTROLS",
+    sublabel: "DRAWER",
+    icon: "Sliders",
+    x: 0.79,
+    y: 0.035,
+    width: 0.19,
+    height: 0.095,
+  },
+];
 
 interface CameraViewProps {
   landmarker: HandLandmarker | null;
@@ -14,6 +74,8 @@ interface CameraViewProps {
   onHandsDetected: (hands: TrackedHand[]) => void;
   onFpsUpdate: (fps: number, latencyMs: number) => void;
   clearRequest?: number;
+  onUpdateSettings?: (newSettings: Partial<AppSettings>) => void;
+  onOpenDrawer?: () => void;
 }
 
 export const CameraView: React.FC<CameraViewProps> = ({
@@ -22,6 +84,8 @@ export const CameraView: React.FC<CameraViewProps> = ({
   onHandsDetected,
   onFpsUpdate,
   clearRequest,
+  onUpdateSettings,
+  onOpenDrawer,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,6 +100,15 @@ export const CameraView: React.FC<CameraViewProps> = ({
   const [shapeSnapToast, setShapeSnapToast] = useState<string | null>(null);
   const shapeToastTimerRef = useRef<number | null>(null);
 
+  // Air Mouse & Hologram Button state
+  const airMouseStateRef = useRef<AirMouseState>(createAirMouseState());
+  const [airMouseDisplayState, setAirMouseDisplayState] = useState<AirMouseState>(createAirMouseState());
+
+  const onUpdateSettingsRef = useRef(onUpdateSettings);
+  onUpdateSettingsRef.current = onUpdateSettings;
+  const onOpenDrawerRef = useRef(onOpenDrawer);
+  onOpenDrawerRef.current = onOpenDrawer;
+
   const handleShapeDetected = useCallback((detected: { label: string }) => {
     setShapeSnapToast(detected.label);
     if (settingsRef.current.soundEnabled) {
@@ -48,6 +121,61 @@ export const CameraView: React.FC<CameraViewProps> = ({
       setShapeSnapToast(null);
     }, 2200);
   }, []);
+
+  const handleHologramButtonTrigger = useCallback((btnId: string) => {
+    if (settingsRef.current.soundEnabled) {
+      soundEffects.playGestureSound("Pinch", true);
+    }
+    switch (btnId) {
+      case "toggle-draw":
+        onUpdateSettingsRef.current?.({ drawingEnabled: !settingsRef.current.drawingEnabled });
+        break;
+      case "clear-canvas":
+        if (drawCanvasRef.current && canvasRef.current) {
+          const ctx = drawCanvasRef.current.getContext("2d");
+          if (ctx) {
+            clearDrawing(ctx, canvasRef.current.width, canvasRef.current.height, drawingStateRef.current);
+          }
+        }
+        break;
+      case "toggle-audio":
+        onUpdateSettingsRef.current?.({ soundEnabled: !settingsRef.current.soundEnabled });
+        soundEffects.setEnabled(!settingsRef.current.soundEnabled);
+        break;
+      case "cycle-theme": {
+        const themeList: ThemeName[] = ["cyber", "emerald", "sunset", "matrix"];
+        const curIdx = themeList.indexOf(settingsRef.current.theme);
+        const nextTheme = themeList[(curIdx + 1) % themeList.length];
+        onUpdateSettingsRef.current?.({ theme: nextTheme });
+        break;
+      }
+      case "open-drawer":
+        onOpenDrawerRef.current?.();
+        break;
+    }
+  }, []);
+
+  const handleAirMouseClick = useCallback((pos: { screenX: number; screenY: number }) => {
+    if (settingsRef.current.soundEnabled) {
+      soundEffects.playGestureSound("Pinch", true);
+    }
+    if (videoRef.current && canvasRef.current) {
+      const rect = videoRef.current.getBoundingClientRect();
+      const normX = pos.screenX / (canvasRef.current.width || 1);
+      const normY = pos.screenY / (canvasRef.current.height || 1);
+      const clientX = rect.left + normX * rect.width;
+      const clientY = rect.top + normY * rect.height;
+      const target = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+      if (target && typeof target.click === "function") {
+        target.click();
+      }
+    }
+  }, []);
+
+  const handleHologramButtonTriggerRef = useRef(handleHologramButtonTrigger);
+  handleHologramButtonTriggerRef.current = handleHologramButtonTrigger;
+  const handleAirMouseClickRef = useRef(handleAirMouseClick);
+  handleAirMouseClickRef.current = handleAirMouseClick;
 
   // FPS tracking refs
   const frameCountRef = useRef<number>(0);
@@ -277,6 +405,25 @@ export const CameraView: React.FC<CameraViewProps> = ({
           );
         }
 
+        // Air Mouse & Hologram Button processing
+        if (settingsRef.current.airMouseEnabled || settingsRef.current.hologramButtonsEnabled) {
+          updateAirMouse(
+            trackedHands,
+            airMouseStateRef.current,
+            canvas.width,
+            canvas.height,
+            settingsRef.current.mirror,
+            settingsRef.current.hologramButtonsEnabled ? HOLOGRAM_BUTTONS : [],
+            startTime,
+            (btnId) => handleHologramButtonTriggerRef.current(btnId),
+            (pos) => handleAirMouseClickRef.current(pos),
+          );
+          setAirMouseDisplayState({ ...airMouseStateRef.current });
+        } else if (airMouseStateRef.current.cursor) {
+          airMouseStateRef.current.cursor = null;
+          setAirMouseDisplayState({ ...airMouseStateRef.current });
+        }
+
         // Notify parent state
         onHandsDetectedRef.current(trackedHands);
 
@@ -371,6 +518,16 @@ export const CameraView: React.FC<CameraViewProps> = ({
           <Sparkles style={{ width: "15px", height: "15px", color: "var(--cyan-glow)" }} />
           <span>Auto-Snapped {shapeSnapToast}</span>
         </div>
+      )}
+
+      {/* Touchless Air Mouse & Floating Holographic Spatial Buttons */}
+      {(settings.airMouseEnabled || settings.hologramButtonsEnabled) && isStreamReady && (
+        <HologramButtonsOverlay
+          settings={settings}
+          airMouseState={airMouseDisplayState}
+          buttons={HOLOGRAM_BUTTONS}
+          onTriggerButton={handleHologramButtonTrigger}
+        />
       )}
 
       {/* Loading or Error State */}

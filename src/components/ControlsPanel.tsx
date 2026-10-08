@@ -1,6 +1,6 @@
 import React from "react";
 import type { AppSettings, ThemeName } from "../types";
-import { Sliders, Eye, Zap, Palette, FlipHorizontal, Box, Hash } from "lucide-react";
+import { Sliders, Eye, Zap, Palette, FlipHorizontal, Box, Hash, MousePointer, Sparkles } from "lucide-react";
 
 interface ControlsPanelProps {
   settings: AppSettings;
@@ -75,6 +75,22 @@ export const ControlsPanel: React.FC<ControlsPanelProps> = ({
         >
           <FlipHorizontal style={{ width: "13px", height: "13px" }} />
           <span>Mirror Feed</span>
+        </button>
+
+        <button
+          onClick={() => onUpdateSettings({ airMouseEnabled: !settings.airMouseEnabled })}
+          className={`toggle-btn ${settings.airMouseEnabled ? "active" : ""}`}
+        >
+          <MousePointer style={{ width: "13px", height: "13px" }} />
+          <span>Air Mouse</span>
+        </button>
+
+        <button
+          onClick={() => onUpdateSettings({ hologramButtonsEnabled: !settings.hologramButtonsEnabled })}
+          className={`toggle-btn ${settings.hologramButtonsEnabled ? "active" : ""}`}
+        >
+          <Sparkles style={{ width: "13px", height: "13px" }} />
+          <span>Holo Buttons</span>
         </button>
       </div>
 
